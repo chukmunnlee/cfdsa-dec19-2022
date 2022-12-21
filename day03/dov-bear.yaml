@@ -1,0 +1,71 @@
+---
+apiVersion: apps/v1
+kind: Deployment 
+metadata:
+  name: dov-bear-deploy
+  labels:
+    name: dov-bear-deploy
+  namespace: myns
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      name: dov-bear-po
+      dept: dev
+  template:
+    metadata:
+      name: dov-bear-po
+      labels:
+        name: dov-bear-po
+        dept: dev
+    spec:
+      serviceAccountName: default
+      volumes: 
+      - name: config-vol
+        configMap: 
+          name: config-cm
+      - name: tmp-vol
+        emptyDir: {}
+      containers:
+      - name: dov-bear-container
+        image: chukmunnlee/dov-bear-golang@sha256:ec9c01eabd2e2bd78e75b1dfdeb228da1cf9f3ddc9e62d9d091ee8d73c342a34
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: INSTANCE_NAME
+          value: dov-bear
+        - name: INSTANCE_HASH
+          valueFrom: 
+            fieldRef:
+              fieldPath: status.podIP
+        - name: PORT 
+          value: "3000"
+        ports:
+        - containerPort: 3000
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 3000
+        volumeMounts:
+        - name: config-vol
+          mountPath: /app/config
+          readOnly: true
+        - name: tmp-vol
+          mountPath: /opt/tmp
+
+--- 
+apiVersion: v1 
+kind: Service 
+metadata: 
+  name: dov-bear-svc 
+  labels:
+    name: dov-bear-svc 
+  namespace: myns
+spec:
+  type: ClusterIP
+  selector: 
+    name: dov-bear-po
+    dept: dev
+  ports: 
+  - port: 3000 
+    targetPort: 3000
