@@ -18,6 +18,8 @@ spec:
       labels:
         name: dov-bear-po
         dept: dev
+        deny-all: "true"
+        allow-dns: "true"
     spec:
       containers:
       - name: dov-bear-container
@@ -103,3 +105,36 @@ spec:
       target:
         type: Utilization 
         averageUtilization: 30
+
+---
+apiVersion: networking.k8s.io/v1 
+kind: NetworkPolicy 
+metadata:
+  name: deny-all
+  namespace: dovns
+spec: 
+  policyTypes:
+  - Ingress 
+  - Egress
+  podSelector: 
+    matchLabels: 
+      deny-all: "true"
+---
+apiVersion: networking.k8s.io/v1 
+kind: NetworkPolicy 
+metadata:
+  name: allow-dns
+  namespace: dovns
+spec: 
+  policyTypes:
+  - Egress
+  podSelector: 
+    matchLabels: 
+      allow-dns: "true"
+  egress:
+  - to: 
+    - ports:
+      - port: 53
+        protocol: TCP
+      - port: 53
+        protocol: UDP
